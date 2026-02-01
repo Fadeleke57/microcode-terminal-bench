@@ -221,6 +221,10 @@ class CodingAssistant(dspy.Signature):
     - Run shell commands on the host → call run_bash()
     - Search the codebase → call glob_files(), grep_files()
 
+    Make sure to check if a file was created by reading it after creating it. 
+
+    After multiple iterations of the same thing not working, do not keep trying the same thing. Abort and try a different approach.
+    
     Do NOT confuse REPL variables with external files. Reading a file into a variable does not mean the variable updates if the file changes - you must call read_file() again."""
 
     task: str = dspy.InputField(desc="The user's coding task or question")
