@@ -29,7 +29,7 @@ I created a closed-loop feedback loop around Terminal Bench to create a system w
 ```
 
 
-![RLM diff](assets/diff.heic)
+![RLM diff](assets/diff.png)
 
 ## Project Structure
 
