@@ -28,6 +28,9 @@ I created a closed-loop feedback loop around Terminal Bench to create a system w
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
+![RLM diff](assets/diff.heic)
+
 ## Project Structure
 
 ```
