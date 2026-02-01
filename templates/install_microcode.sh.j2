@@ -1,0 +1,75 @@
+#!/bin/bash
+set -e
+
+# Determine privilege escalation command
+SUDO=""
+if command -v sudo &> /dev/null; then
+    SUDO="sudo"
+else
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "sudo not found and not running as root; cannot install system packages." >&2
+        exit 1
+    fi
+fi
+
+# Update apt once if we need to install any packages
+NEED_APT_UPDATE=0
+if ! command -v curl &> /dev/null; then
+    NEED_APT_UPDATE=1
+fi
+if ! command -v unzip &> /dev/null && ! command -v 7z &> /dev/null; then
+    NEED_APT_UPDATE=1
+fi
+if ! command -v git &> /dev/null; then
+    NEED_APT_UPDATE=1
+fi
+if ! command -v rg &> /dev/null; then
+    NEED_APT_UPDATE=1
+fi
+if [ "$NEED_APT_UPDATE" -eq 1 ]; then
+    $SUDO apt-get update
+fi
+
+# Ensure curl is available
+if ! command -v curl &> /dev/null; then
+    $SUDO apt-get install -y curl
+fi
+
+# Ensure unzip or 7z is available for Deno installer
+if ! command -v unzip &> /dev/null && ! command -v 7z &> /dev/null; then
+    $SUDO apt-get install -y unzip
+fi
+
+# Ensure git is available (required by microcode via GitPython)
+if ! command -v git &> /dev/null; then
+    $SUDO apt-get install -y git
+fi
+
+# Install Deno runtime (required by microcode)
+curl -fsSL https://deno.land/install.sh | sh
+export DENO_INSTALL="$HOME/.deno"
+export PATH="$DENO_INSTALL/bin:$PATH"
+
+# Install uv if not present
+if ! command -v uv &> /dev/null; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+# Ensure uv's bin dir is on PATH (uv installs tools to ~/.local/bin)
+export PATH="$HOME/.local/bin:$PATH"
+
+# Install ripgrep if not present (microcode uses rg for file listing)
+if ! command -v rg &> /dev/null; then
+    $SUDO apt-get install -y ripgrep
+fi
+
+# Install microcode as a uv tool
+uv tool install microcode
+
+# Create symlinks in /usr/local/bin so tools are available in all shell sessions
+# (export PATH only affects current shell; new shells won't have the PATH modifications)
+$SUDO ln -sf "$HOME/.local/bin/microcode" /usr/local/bin/microcode
+$SUDO ln -sf "$HOME/.local/bin/uv" /usr/local/bin/uv
+$SUDO ln -sf "$HOME/.deno/bin/deno" /usr/local/bin/deno
+
+# Verify installation
+microcode --help

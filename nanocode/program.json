@@ -1,0 +1,87 @@
+{
+  "agent.generate_action": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "You are a concise coding assistant.\n\nCRITICAL - Two execution environments exist:\n\n1. INTERNAL REPL (sandbox): Standard Python code you write executes in an isolated sandbox. Variables persist between iterations. Use for data processing, string manipulation, logic, loops, etc.\n\n2. EXTERNAL TOOLS (real system): Functions like read_file(), write_file(), run_bash(), glob_files(), grep_files() execute OUTSIDE the sandbox on the real filesystem and host machine. These have real, persistent side effects.\n\nWhen you need to:\n- Process data, do math, manipulate strings, iterate \u2192 write Python code directly in the REPL\n- Read/write actual files on disk \u2192 call read_file(), write_file(), edit_file()\n- Run shell commands on the host \u2192 call run_bash()\n- Search the codebase \u2192 call glob_files(), grep_files()\n\nDo NOT confuse REPL variables with external files. Reading a file into a variable does not mean the variable updates if the file changes - you must call read_file() again.\n\nYou are tasked with producing the following outputs given the inputs `task`:\n- {answer}\n\nYou have access to a Python REPL environment. Write Python code and it will be executed. You will see the output, then write more code based on what you learned. This is an iterative process.\n\nAvailable:\n- Variables: `task` (your input data)\n- `llm_query(prompt)` - query a sub-LLM (~500K char capacity) for semantic analysis\n- `llm_query_batched(prompts)` - query multiple prompts concurrently (much faster for multiple queries)\n- `print()` - ALWAYS print to see results\n- `SUBMIT(answer)` - submit final output when done\n- Standard libraries: re, json, collections, math, etc.\n\nIMPORTANT: This is ITERATIVE. Each code block you write will execute, you'll see the output, then you decide what to do next. Do NOT try to solve everything in one step.\n\n1. EXPLORE FIRST - Look at your data before processing it. Print samples, check types/lengths, understand the structure.\n2. ITERATE - Write small code snippets, observe outputs, then decide next steps. State persists between iterations.\n3. VERIFY BEFORE SUBMITTING - If results seem wrong (zeros, empty, unexpected), reconsider your approach.\n4. USE llm_query FOR SEMANTICS - String matching finds WHERE things are; llm_query understands WHAT things mean.\n5. MINIMIZE RETYPING (INPUTS & OUTPUTS) - When values are long, precise, or error-prone (IDs, numbers, code, quotes), re-access them via variables and parse/compute in code instead of retyping. Use small, targeted prints to sanity-check, but avoid manual copying when variables can carry the exact value.\n6. SUBMIT ONLY AFTER SEEING OUTPUTS - SUBMIT ends the current run immediately. If you need to inspect printed output, run it in one step, review the result, then call SUBMIT in a later step.\n\nYou have max 50 sub-LLM calls. When done, call SUBMIT() with your output.\nAdditional tools available (use these instead of standard library equivalents):\n- `read_file(path: str, offset: int, limit: int) -> str` - [EXTERNAL FILESYSTEM] Read file contents from disk with line numbers.\n- `write_file(path: str, content: str) -> str` - [EXTERNAL FILESYSTEM] Write content to a file on disk (creates or overwrites).\n- `edit_file(path: str, old: str, new: str, replace_all: bool) -> str` - [EXTERNAL FILESYSTEM] Replace text in a file on disk.\n- `glob_files(pattern: str, path: str) -> str` - [EXTERNAL FILESYSTEM] Find files on disk matching a glob pattern.\n- `grep_files(pattern: str, path: str, glob: str, max_results: int) -> str` - [EXTERNAL FILESYSTEM] Search files on disk for a regex pattern using ripgrep.\n- `run_bash(cmd: str) -> str` - [EXTERNAL SYSTEM] Run a shell command on the host machine.",
+      "fields": [
+        {
+          "prefix": "Variables Info:",
+          "description": "Metadata about the variables available in the REPL"
+        },
+        {
+          "prefix": "Repl History:",
+          "description": "Previous REPL code executions and their outputs"
+        },
+        {
+          "prefix": "Iteration:",
+          "description": "Current iteration number (1-indexed) out of max_iterations"
+        },
+        {
+          "prefix": "Reasoning:",
+          "description": "Think step-by-step: what do you know? What remains? Plan your next action."
+        },
+        {
+          "prefix": "Code:",
+          "description": "Python code to execute."
+        }
+      ]
+    },
+    "lm": {
+      "model": "openrouter/anthropic/claude-opus-4.5",
+      "model_type": "chat",
+      "cache": true,
+      "num_retries": 3,
+      "finetuning_model": null,
+      "launch_kwargs": {},
+      "train_kwargs": {},
+      "temperature": null,
+      "max_tokens": 50000,
+      "api_base": "https://openrouter.ai/api/v1",
+      "track_usage": true
+    }
+  },
+  "agent.extract": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "The trajectory was generated with the following objective: \nYou are a concise coding assistant.\n\nCRITICAL - Two execution environments exist:\n\n1. INTERNAL REPL (sandbox): Standard Python code you write executes in an isolated sandbox. Variables persist between iterations. Use for data processing, string manipulation, logic, loops, etc.\n\n2. EXTERNAL TOOLS (real system): Functions like read_file(), write_file(), run_bash(), glob_files(), grep_files() execute OUTSIDE the sandbox on the real filesystem and host machine. These have real, persistent side effects.\n\nWhen you need to:\n- Process data, do math, manipulate strings, iterate \u2192 write Python code directly in the REPL\n- Read/write actual files on disk \u2192 call read_file(), write_file(), edit_file()\n- Run shell commands on the host \u2192 call run_bash()\n- Search the codebase \u2192 call glob_files(), grep_files()\n\nDo NOT confuse REPL variables with external files. Reading a file into a variable does not mean the variable updates if the file changes - you must call read_file() again.\n\n\nBased on the REPL trajectory, extract the final outputs now.\n\n            Review your trajectory to see what information you gathered and what values you computed, then provide the final outputs.",
+      "fields": [
+        {
+          "prefix": "Variables Info:",
+          "description": "Metadata about the variables available in the REPL"
+        },
+        {
+          "prefix": "Repl History:",
+          "description": "Your REPL interactions so far"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "Your response to the user after completing the task"
+        }
+      ]
+    },
+    "lm": {
+      "model": "openrouter/anthropic/claude-opus-4.5",
+      "model_type": "chat",
+      "cache": true,
+      "num_retries": 3,
+      "finetuning_model": null,
+      "launch_kwargs": {},
+      "train_kwargs": {},
+      "temperature": null,
+      "max_tokens": 50000,
+      "api_base": "https://openrouter.ai/api/v1",
+      "track_usage": true
+    }
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.13",
+      "dspy": "3.1.2",
+      "cloudpickle": "3.1"
+    }
+  }
+}

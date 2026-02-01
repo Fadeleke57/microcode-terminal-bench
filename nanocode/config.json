@@ -1,0 +1,11 @@
+{
+  "model": null,
+  "max_iters": 50,
+  "lm": "openrouter/anthropic/claude-opus-4.5",
+  "sub_lm": "openrouter/qwen/qwen-coder",
+  "api_base": "https://openrouter.ai/api/v1",
+  "max_tokens": 50000,
+  "max_output_chars": 100000,
+  "verbose": true,
+  "track_usage": true
+}

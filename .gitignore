@@ -1,0 +1,6 @@
+.env
+terminal_bench.egg-info
+__pycache__
+failed-jobs
+jobs
+reflect_pr

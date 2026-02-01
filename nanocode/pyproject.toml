@@ -1,0 +1,7 @@
+[project]
+name = "nanocode"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["dspy>=3.1.2", "fastmcp>=2.14.3", "mcp2py>=0.6.0", "modaic>=0.10.4", "weave>=0.52.25"]

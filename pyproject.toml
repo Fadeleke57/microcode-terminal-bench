@@ -1,0 +1,14 @@
+[project]
+name = "terminal-bench"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dspy>=3.1.2",
+    "harbor>=0.1.42",
+    "mcp2py>=0.6.0",
+    "modaic>=0.10.4",
+    "wandb>=0.24.1",
+    "weave>=0.52.25",
+]
