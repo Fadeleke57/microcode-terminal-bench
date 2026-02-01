@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Continuous monitoring script for failed benchmark jobs.
+Continuous monitoring script for failed benchmark jobs with self-improving feedback loop.
 
 This script:
 1. Continuously monitors jobs/{job_id}/{task_id} for failed jobs (reward.txt == 0)
 2. Tracks test-case-result + trajectory for failed jobs
 3. Copies artifacts to failed-jobs/{job_id}/{task_id}/
 4. Runs microcode locally to analyze failures and generate FEEDBACK.md
+5. Uses microcode to iterate on the CodingAssistant signature based on feedback
+6. Pushes the updated nanocode to hub for automatic propagation
 """
 
 import asyncio
@@ -180,6 +182,107 @@ def run_reflection_analysis(job_id: str) -> str:
     return ""
 
 
+def run_signature_iteration(feedback_path: Path) -> bool:
+    """Run microcode to iterate on the CodingAssistant signature based on feedback.
+
+    Returns True if the signature was successfully updated.
+    """
+    signature_file = Path("nanocode/nanocode.py")
+
+    if not signature_file.exists():
+        print(f"Error: {signature_file} not found")
+        return False
+
+    prompt = f"""Read the feedback in {feedback_path} which contains analysis of failed agent trajectories and common failure modes.
+
+Then read the CodingAssistant signature in nanocode/nanocode.py. This is a dspy.Signature class that defines the agent's behavior.
+
+Based on the feedback, iterate on the CodingAssistant signature to help the agent avoid these failure modes. You can update:
+1. The class docstring (the main system prompt)
+2. The task field description
+3. The answer field description
+
+Make targeted improvements based on the specific failure patterns identified. Do NOT change the class name, field names, or the overall structure - only update the docstrings/descriptions.
+
+After making your changes, confirm what you updated."""
+
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
+
+    cmd = [
+        "microcode",
+        "task",
+        prompt,
+        "--lm",
+        "openai/gpt-5.2",
+        "--sub-lm",
+        "qwen/qwen3-coder",
+        "--max-iterations",
+        "30",
+        "--max-tokens",
+        "30000",
+        "--verbose",
+    ]
+
+    if api_key:
+        cmd.extend(["--api-key", api_key])
+
+    try:
+        print(f"\n>>> Running signature iteration based on {feedback_path}")
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=1500,
+        )
+
+        print(f"Signature iteration stdout:\n{result.stdout}")
+        if result.stderr:
+            print(f"Signature iteration stderr:\n{result.stderr}")
+
+        return result.returncode == 0
+
+    except subprocess.TimeoutExpired:
+        print("Signature iteration timed out")
+        return False
+    except Exception as e:
+        print(f"Error running signature iteration: {e}")
+        return False
+
+
+def push_nanocode_to_hub() -> bool:
+    """Push the updated nanocode to hub.
+
+    Returns True if push was successful.
+    """
+    try:
+        print("\n>>> Pushing updated nanocode to hub")
+        result = subprocess.run(
+            ["uv", "run", "nanocode.py"],
+            cwd="nanocode",
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+
+        print(f"Push stdout:\n{result.stdout}")
+        if result.stderr:
+            print(f"Push stderr:\n{result.stderr}")
+
+        if result.returncode == 0:
+            print("✓ Successfully pushed nanocode to hub")
+            return True
+        else:
+            print(f"✗ Push failed with return code {result.returncode}")
+            return False
+
+    except subprocess.TimeoutExpired:
+        print("Push timed out")
+        return False
+    except Exception as e:
+        print(f"Error pushing to hub: {e}")
+        return False
+
+
 def print_status(failed_tasks: list[FailedTask], processed_jobs: Set[str]) -> None:
     """Print current status."""
     jobs_summary: dict[str, int] = {}
@@ -243,6 +346,18 @@ async def monitor_loop(one_shot: bool = False) -> None:
                             if feedback:
                                 print(f"✓ Generated FEEDBACK.md for {job_id}")
                                 last_analyzed_count[job_id] = count
+
+                                # Run signature iteration based on feedback
+                                feedback_path = FAILED_DIR / job_id / "FEEDBACK.md"
+                                if run_signature_iteration(feedback_path):
+                                    print(f"✓ Updated CodingAssistant signature for {job_id}")
+                                    # Push updated nanocode to hub
+                                    if push_nanocode_to_hub():
+                                        print(f"✓ Pushed new revision to hub for {job_id}")
+                                    else:
+                                        print(f"✗ Failed to push to hub for {job_id}")
+                                else:
+                                    print(f"✗ Failed to update signature for {job_id}")
                             else:
                                 print(f"✗ No feedback generated for {job_id}")
 

@@ -428,9 +428,6 @@ class RLMCodingProgram(PrecompiledProgram):
 
 if __name__ == "__main__":
     agent = RLMCodingProgram(RLMCodingConfig())
-
-    # agent(task="what's 1 + 1?")
-
     branches = ["prod"]
     for branch in branches:
         agent.push_to_hub(
